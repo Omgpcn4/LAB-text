@@ -592,7 +592,7 @@ Return valid JSON only.`;
     tr.dataset.sectionPrevDate = data.sectionPrevDate || "";
 
     tr.innerHTML = `
-      <td class="col-include"><input type="checkbox" class="row-include" checked /></td>
+      <td class="col-include"><input type="checkbox" class="row-include" /></td>
       <td class="col-name"><input type="text" class="row-name" value="${escapeAttr(data.name || "")}" /></td>
       <td class="col-value"><input type="text" class="row-value" value="${escapeAttr(data.value || "")}" /></td>
       <td class="col-unit"><input type="text" class="row-unit" value="${escapeAttr(data.unit || "")}" /></td>
