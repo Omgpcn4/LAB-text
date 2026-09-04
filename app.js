@@ -21,6 +21,10 @@
   const optFlag = document.getElementById("opt-flag");
   const copyBtn = document.getElementById("copy-btn");
   const copyConfirm = document.getElementById("copy-confirm");
+  const modeLocal = document.getElementById("mode-local");
+  const modeAi = document.getElementById("mode-ai");
+  const aiKeyRow = document.getElementById("ai-key-row");
+  const apiKeyInput = document.getElementById("api-key-input");
 
   if (window.pdfjsLib) {
     pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -28,6 +32,18 @@
   }
 
   let rowIdCounter = 0;
+
+  // ---------- Extraction mode ----------
+  const API_KEY_STORAGE_KEY = "lab-text-extractor-anthropic-key";
+  apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE_KEY) || "";
+  apiKeyInput.addEventListener("input", () => {
+    localStorage.setItem(API_KEY_STORAGE_KEY, apiKeyInput.value.trim());
+  });
+  [modeLocal, modeAi].forEach((el) =>
+    el.addEventListener("change", () => {
+      aiKeyRow.hidden = !modeAi.checked;
+    })
+  );
 
   // ---------- Status helpers ----------
   function setStatus(msg) {
@@ -62,25 +78,126 @@
   });
 
   async function handleFile(file) {
+    const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    const isImage = file.type.startsWith("image/");
+    if (!isPdf && !isImage) {
+      alert("Unsupported file type. Please choose a PDF or an image.");
+      return;
+    }
+
     try {
-      let text;
-      if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) {
-        text = await extractFromPdf(file);
-      } else if (file.type.startsWith("image/")) {
-        text = await extractFromImage(file);
+      if (modeAi.checked) {
+        const apiKey = apiKeyInput.value.trim();
+        if (!apiKey) {
+          alert("Enter your Anthropic API key above, or switch to Local OCR.");
+          return;
+        }
+        setStatus("Reading with Claude…");
+        const rows = await extractWithClaude(file, isPdf, apiKey);
+        rawTextSection.hidden = false;
+        rawTextEl.value = rows
+          .map((r) => [r.name, r.value, r.unit, r.range, r.flag].filter(Boolean).join(" "))
+          .join("\n");
+        renderRows(rows);
       } else {
-        alert("Unsupported file type. Please choose a PDF or an image.");
-        return;
+        const text = isPdf ? await extractFromPdf(file) : await extractFromImage(file);
+        rawTextEl.value = text.trim();
+        rawTextSection.hidden = false;
+        runParseAndRender();
       }
-      rawTextEl.value = text.trim();
-      rawTextSection.hidden = false;
-      runParseAndRender();
     } catch (err) {
       console.error(err);
       alert("Something went wrong while reading the file: " + err.message);
     } finally {
       clearStatus();
     }
+  }
+
+  // ---------- AI-read extraction (Claude) ----------
+  let AnthropicSDK = null;
+  async function loadAnthropicSDK() {
+    if (!AnthropicSDK) {
+      const mod = await import("https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.123.0/+esm");
+      AnthropicSDK = mod.default;
+    }
+    return AnthropicSDK;
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(",")[1]);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const CLAUDE_EXTRACTION_PROMPT = `Read the attached lab report (a CBC/hematology and/or chemistry panel, veterinary or human) and return ONLY a JSON array — no markdown fences, no commentary — of objects shaped like:
+{"name": string, "value": string, "unit": string, "range": string, "flag": "LOW" | "HIGH" | ""}
+
+Rules:
+- Include only rows from the actual test-results table (the Test/Result/Reference Interval section).
+- Skip all patient demographics, clinic letterhead, doctor's notes, and footer/print text entirely.
+- Use the exact parameter abbreviation as printed (e.g. RBC, HCT, %NEU, BUN/CREA).
+- If more than one visit's values appear, use only the current/most recent visit.
+- "unit" and "range" are "" when the source gives none (e.g. ratios like BUN/CREA or ALB/GLOB).
+- "flag" is "LOW" or "HIGH" only when the source explicitly marks that row abnormal; otherwise "".
+- Preserve the original top-to-bottom order of parameters.
+Return valid JSON only.`;
+
+  async function extractWithClaude(file, isPdf, apiKey) {
+    const Anthropic = await loadAnthropicSDK();
+    const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+    const base64 = await fileToBase64(file);
+    const block = isPdf
+      ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } }
+      : { type: "image", source: { type: "base64", media_type: file.type || "image/png", data: base64 } };
+
+    let response;
+    try {
+      response = await client.messages.create({
+        model: "claude-opus-5",
+        max_tokens: 4096,
+        messages: [
+          { role: "user", content: [block, { type: "text", text: CLAUDE_EXTRACTION_PROMPT }] },
+        ],
+      });
+    } catch (err) {
+      if (err instanceof Anthropic.AuthenticationError) {
+        throw new Error("That API key was rejected. Check it and try again.");
+      }
+      if (err instanceof Anthropic.RateLimitError) {
+        throw new Error("Rate limited by the Anthropic API — wait a moment and try again.");
+      }
+      if (err instanceof Anthropic.APIError) {
+        throw new Error(`Anthropic API error (${err.status}): ${err.message}`);
+      }
+      throw err;
+    }
+
+    const textBlock = response.content.find((b) => b.type === "text");
+    const jsonText = (textBlock && textBlock.text ? textBlock.text : "")
+      .trim()
+      .replace(/^```(?:json)?/i, "")
+      .replace(/```$/, "")
+      .trim();
+
+    let rows;
+    try {
+      rows = JSON.parse(jsonText);
+    } catch (e) {
+      throw new Error("Claude's response wasn't valid JSON — try again, or switch to Local OCR.");
+    }
+    if (!Array.isArray(rows)) {
+      throw new Error("Unexpected response shape from Claude.");
+    }
+    return rows.map((r) => ({
+      name: r.name || "",
+      value: r.value != null ? String(r.value) : "",
+      unit: r.unit || "",
+      range: r.range || "",
+      flag: r.flag || "",
+    }));
   }
 
   // ---------- PDF extraction ----------
@@ -175,11 +292,14 @@
     /^weight/i,
     /^accession/i,
     /^page\s+\d+/i,
+    /^printed/i,
     /^date/i,
     /^comment/i,
     /^sample/i,
     /^requisition/i,
     /^report/i,
+    /^\d+\.\s/,
+    /^test\s+results?\b/i,
   ];
 
   function isNoiseLine(line) {
@@ -237,8 +357,12 @@
 
   function parseText(text) {
     const lines = text.split(/\r?\n/);
+    // Skip everything above the results table (patient info, clinic letterhead)
+    // by starting after the first "Test Results ..." header row, if one is found.
+    const headerIdx = lines.findIndex((l) => /^test\s+results?\b/i.test(l.trim()));
+    const dataLines = headerIdx >= 0 ? lines.slice(headerIdx + 1) : lines;
     const rows = [];
-    for (const line of lines) {
+    for (const line of dataLines) {
       const row = parseLine(line);
       if (row) rows.push(row);
     }
