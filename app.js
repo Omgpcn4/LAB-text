@@ -77,6 +77,21 @@
     if (file) handleFile(file);
   });
 
+  document.addEventListener("paste", (e) => {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type && item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          handleFile(file);
+        }
+        break;
+      }
+    }
+  });
+
   async function handleFile(file) {
     const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
     const isImage = file.type.startsWith("image/");
