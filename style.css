@@ -135,55 +135,6 @@ button.secondary:hover {
 
 .panel-actions { display: flex; gap: 8px; }
 
-.mode-row {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.mode-option {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 0.88rem;
-  line-height: 1.45;
-  cursor: pointer;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
-
-.mode-option:has(input:checked) {
-  border-color: var(--accent);
-  background: #fbf3ea;
-}
-
-.mode-option input { margin-top: 3px; flex: none; }
-
-.ai-key-row {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.ai-key-row label {
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.ai-key-row input[type="password"] {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.85rem;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: #fffdf9;
-  color: var(--text);
-}
-
 textarea {
   width: 100%;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;

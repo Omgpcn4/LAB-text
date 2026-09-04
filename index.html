@@ -13,27 +13,6 @@
   </header>
 
   <main>
-    <section class="panel">
-      <div class="panel-header">
-        <h2>Extraction mode</h2>
-      </div>
-      <div class="mode-row">
-        <label class="mode-option">
-          <input type="radio" name="extract-mode" id="mode-local" value="local" checked />
-          <span><strong>Local OCR (private)</strong> — runs fully in your browser, nothing leaves your device. Best on PDFs with real text; weaker on scanned/photographed reports.</span>
-        </label>
-        <label class="mode-option">
-          <input type="radio" name="extract-mode" id="mode-ai" value="ai" />
-          <span><strong>AI-read (Claude)</strong> — much more accurate on scans and photos, but the file and your API key are sent directly from this browser to Anthropic's API.</span>
-        </label>
-      </div>
-      <div id="ai-key-row" class="ai-key-row" hidden>
-        <label for="api-key-input">Anthropic API key</label>
-        <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off" />
-        <p class="hint">Stored only in this browser's local storage. Sent only to Anthropic's API, directly from your browser, when you extract a file — never anywhere else, never to this app's authors.</p>
-      </div>
-    </section>
-
     <section id="drop-zone" class="drop-zone">
       <input type="file" id="file-input" accept="application/pdf,image/*" hidden />
       <div class="drop-zone-inner">
@@ -110,7 +89,7 @@
   </main>
 
   <footer class="app-footer">
-    <p>Local OCR mode: everything runs in your browser (PDF.js for PDF text, Tesseract.js for OCR) — nothing is sent anywhere. AI-read mode: the file goes directly from your browser to Anthropic's API using your own key.</p>
+    <p>Everything runs in your browser (PDF.js for PDF text, Tesseract.js for OCR) — nothing is sent anywhere.</p>
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
