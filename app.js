@@ -14,6 +14,8 @@
   const tbody = document.getElementById("params-tbody");
   const addRowBtn = document.getElementById("add-row-btn");
   const clearRowsBtn = document.getElementById("clear-rows-btn");
+  const selectAllBtn = document.getElementById("select-all-btn");
+  const deselectAllBtn = document.getElementById("deselect-all-btn");
   const outputSection = document.getElementById("output-section");
   const outputText = document.getElementById("output-text");
   const optUnit = document.getElementById("opt-unit");
@@ -638,6 +640,16 @@ Return valid JSON only.`;
       tbody.innerHTML = "";
       updateOutput();
     }
+  });
+
+  selectAllBtn.addEventListener("click", () => {
+    tbody.querySelectorAll(".row-include").forEach((cb) => (cb.checked = true));
+    updateOutput();
+  });
+
+  deselectAllBtn.addEventListener("click", () => {
+    tbody.querySelectorAll(".row-include").forEach((cb) => (cb.checked = false));
+    updateOutput();
   });
 
   // ---------- Output generation ----------
