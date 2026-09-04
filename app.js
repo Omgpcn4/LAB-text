@@ -201,6 +201,38 @@ Return valid JSON only.`;
   }
 
   // ---------- PDF extraction ----------
+
+  // PDF.js's own hasEOL hint is a per-generator heuristic and unreliable —
+  // some report engines (this one included) never set it, which collapses
+  // an entire page into one unbroken line. Every text item always carries a
+  // real page position, though, so rebuild lines by clustering items that
+  // share a y-coordinate (same row) and ordering each row left-to-right.
+  function reconstructPageText(items) {
+    const Y_TOLERANCE = 2; // PDF points
+    const lines = [];
+    for (const item of items) {
+      if (!item.str) continue;
+      const x = item.transform[4];
+      const y = item.transform[5];
+      let line = lines.find((l) => Math.abs(l.y - y) <= Y_TOLERANCE);
+      if (!line) {
+        line = { y, entries: [] };
+        lines.push(line);
+      }
+      line.entries.push({ x, str: item.str });
+    }
+    // PDF page coordinates increase upward, so sort top-to-bottom by descending y.
+    lines.sort((a, b) => b.y - a.y);
+    return lines
+      .map((line) =>
+        line.entries
+          .sort((a, b) => a.x - b.x)
+          .map((e) => e.str)
+          .join(" ")
+      )
+      .join("\n");
+  }
+
   async function extractFromPdf(file) {
     setStatus("Reading PDF…");
     const buf = await file.arrayBuffer();
@@ -214,12 +246,7 @@ Return valid JSON only.`;
       setStatus(`Reading PDF page ${i} of ${pdf.numPages}…`);
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
-      // PDF.js flags each text item with hasEOL when a line break follows it
-      // in the source layout — without this, an entire page collapses into
-      // one unbroken line and the per-line parser below has nothing to split on.
-      const pageText = content.items
-        .map((item) => item.str + (item.hasEOL ? "\n" : " "))
-        .join("");
+      const pageText = reconstructPageText(content.items);
       pageTexts.push({ page, pageText });
       totalChars += pageText.trim().length;
     }
