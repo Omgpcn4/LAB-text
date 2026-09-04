@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lab Text Extractor</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Lab Text Extractor</h1>
+    <p class="subtitle">Import a lab report PDF or screenshot, extract the parameters, and get one clean comma-separated line. Everything runs in your browser — nothing is uploaded anywhere.</p>
+  </header>
+
+  <main>
+    <section id="drop-zone" class="drop-zone">
+      <input type="file" id="file-input" accept="application/pdf,image/*" hidden />
+      <div class="drop-zone-inner">
+        <p><strong>Drop a PDF or image here</strong>, or</p>
+        <button id="browse-btn" type="button">Choose file</button>
+        <p class="hint">Accepts PDF and image files (PNG, JPG, screenshots, photos)</p>
+      </div>
+    </section>
+
+    <section id="status" class="status" hidden>
+      <div class="spinner" aria-hidden="true"></div>
+      <span id="status-text">Working…</span>
+    </section>
+
+    <section id="raw-text-section" class="panel" hidden>
+      <div class="panel-header">
+        <h2>Extracted text</h2>
+        <div class="panel-actions">
+          <button id="reparse-btn" type="button">Re-parse from text</button>
+        </div>
+      </div>
+      <textarea id="raw-text" rows="8" placeholder="Extracted text will appear here. You can fix OCR mistakes before re-parsing."></textarea>
+    </section>
+
+    <section id="table-section" class="panel" hidden>
+      <div class="panel-header">
+        <h2>Detected parameters</h2>
+        <div class="panel-actions">
+          <button id="add-row-btn" type="button">+ Add row</button>
+          <button id="clear-rows-btn" type="button" class="secondary">Clear all</button>
+        </div>
+      </div>
+      <p class="hint">Review the auto-detected rows below — uncheck, edit, or add rows as needed. Automatic parsing is best-effort, especially on reports with a prior visit's values mixed in.</p>
+      <div class="table-wrap">
+        <table id="params-table">
+          <thead>
+            <tr>
+              <th class="col-include">Include</th>
+              <th class="col-name">Parameter</th>
+              <th class="col-value">Value</th>
+              <th class="col-unit">Unit</th>
+              <th class="col-range">Reference range</th>
+              <th class="col-flag">Flag</th>
+              <th class="col-remove"></th>
+            </tr>
+          </thead>
+          <tbody id="params-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="output-section" class="panel" hidden>
+      <div class="panel-header">
+        <h2>Output</h2>
+      </div>
+      <div class="options-row">
+        <label><input type="checkbox" id="opt-unit" checked /> Include unit</label>
+        <label><input type="checkbox" id="opt-range" /> Include reference range</label>
+        <label><input type="checkbox" id="opt-flag" checked /> Include abnormal flags (LOW/HIGH)</label>
+      </div>
+      <textarea id="output-text" rows="4" readonly></textarea>
+      <button id="copy-btn" type="button">Copy to clipboard</button>
+      <span id="copy-confirm" class="copy-confirm" hidden>Copied!</span>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>Processing happens entirely in your browser (PDF.js for PDF text, Tesseract.js for OCR). No files or extracted data are sent to any server.</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.5/dist/tesseract.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+:root {
+  --bg: #f7f7f5;
+  --panel-bg: #ffffff;
+  --border: #ddd8d0;
+  --text: #22201c;
+  --muted: #77716a;
+  --accent: #b5651d;
+  --accent-hover: #954f14;
+  --low: #b3441f;
+  --high: #b3441f;
+  --radius: 8px;
+}
+
+* { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+}
+
+.app-header {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 20px 8px;
+}
+
+.app-header h1 {
+  margin: 0 0 6px;
+  font-size: 1.6rem;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--panel-bg);
+  padding: 40px 20px;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.drop-zone.dragover {
+  border-color: var(--accent);
+  background: #fbf3ea;
+}
+
+.drop-zone-inner p { margin: 4px 0; }
+
+.hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+button {
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+button:hover { background: var(--accent-hover); }
+
+button.secondary {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+button.secondary:hover {
+  background: #efece6;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.panel-actions { display: flex; gap: 8px; }
+
+textarea {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  resize: vertical;
+  background: #fffdf9;
+  color: var(--text);
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+th, td {
+  border-bottom: 1px solid var(--border);
+  padding: 6px 8px;
+  text-align: left;
+}
+
+th { color: var(--muted); font-weight: 600; }
+
+td input[type="text"] {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+td input[type="text"]:hover,
+td input[type="text"]:focus {
+  border-color: var(--border);
+  background: #fffdf9;
+}
+
+.col-include { width: 56px; text-align: center; }
+.col-remove { width: 32px; }
+.col-flag { width: 90px; }
+
+select.flag-select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px;
+  background: #fffdf9;
+  font: inherit;
+}
+
+.row-remove-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+.row-remove-btn:hover { color: var(--low); }
+
+.flag-LOW, .flag-HIGH { color: var(--low); font-weight: 600; }
+
+.options-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+.options-row label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#output-text {
+  margin-bottom: 10px;
+}
+
+.copy-confirm {
+  margin-left: 10px;
+  color: #3a7d3a;
+  font-size: 0.85rem;
+}
+
+.app-footer {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 10px 20px 40px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
