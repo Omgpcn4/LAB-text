@@ -75,6 +75,7 @@
               <th class="col-name">Parameter</th>
               <th class="col-value">Value</th>
               <th class="col-unit">Unit</th>
+              <th class="col-prev">Previous</th>
               <th class="col-range">Reference range</th>
               <th class="col-flag">Flag</th>
               <th class="col-remove"></th>
@@ -93,6 +94,12 @@
         <label><input type="checkbox" id="opt-unit" checked /> Include unit</label>
         <label><input type="checkbox" id="opt-range" /> Include reference range</label>
         <label><input type="checkbox" id="opt-flag" checked /> Include abnormal flags (LOW/HIGH)</label>
+      </div>
+      <div class="prev-mode-row">
+        <p class="prev-mode-label">Previous exam (when the report includes one)</p>
+        <label><input type="radio" name="prev-mode" value="none" checked /> Don't include it</label>
+        <label><input type="radio" name="prev-mode" value="separate" /> Show current &amp; previous as separate lines, with dates</label>
+        <label><input type="radio" name="prev-mode" value="compare" /> Show as a comparison (e.g. HCT 23 -&gt; 46)</label>
       </div>
       <textarea id="output-text" rows="4" readonly></textarea>
       <button id="copy-btn" type="button">Copy to clipboard</button>

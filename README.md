@@ -33,7 +33,11 @@ file server, e.g. `python3 -m http.server`).
    Reference Interval" header row.
 5. Toggle **Include unit**, **Include reference range**, and **Include
    abnormal flags** to control what shows up in the output.
-6. Copy the generated one-line output.
+6. If the report includes a previous visit's results (some analyzer
+   printouts show them in a right-hand column), pick how to handle them:
+   don't include them, show current/previous as separate lines (with
+   dates when detected), or show an inline comparison like `HCT 44.8 -> 42.4`.
+7. Copy the generated output.
 
 ## Notes
 
