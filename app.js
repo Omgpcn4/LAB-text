@@ -214,7 +214,12 @@ Return valid JSON only.`;
       setStatus(`Reading PDF page ${i} of ${pdf.numPages}…`);
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
-      const pageText = content.items.map((item) => item.str).join(" ");
+      // PDF.js flags each text item with hasEOL when a line break follows it
+      // in the source layout — without this, an entire page collapses into
+      // one unbroken line and the per-line parser below has nothing to split on.
+      const pageText = content.items
+        .map((item) => item.str + (item.hasEOL ? "\n" : " "))
+        .join("");
       pageTexts.push({ page, pageText });
       totalChars += pageText.trim().length;
     }
