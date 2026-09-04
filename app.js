@@ -228,15 +228,18 @@ Return valid JSON only.`;
     }
 
     // Likely a scanned PDF with no usable text layer — OCR each page image.
+    // Render at higher resolution than the on-screen default: small print in
+    // a results table needs more source pixels than a screen viewport does.
     for (let i = 0; i < pageTexts.length; i++) {
       setStatus(`OCR on scanned PDF page ${i + 1} of ${pageTexts.length}…`);
       const { page } = pageTexts[i];
-      const viewport = page.getViewport({ scale: 2 });
+      const viewport = page.getViewport({ scale: 3 });
       const canvas = document.createElement("canvas");
       canvas.width = viewport.width;
       canvas.height = viewport.height;
       const ctx = canvas.getContext("2d");
       await page.render({ canvasContext: ctx, viewport }).promise;
+      binarizeCanvas(canvas);
       const ocrText = await ocrCanvas(canvas, (p) =>
         setStatus(`OCR on page ${i + 1} of ${pageTexts.length}… ${p}%`)
       );
@@ -247,16 +250,96 @@ Return valid JSON only.`;
 
   // ---------- Image OCR ----------
   async function extractFromImage(file) {
-    setStatus("Running OCR on image… 0%");
+    setStatus("Preparing image…");
     const url = URL.createObjectURL(file);
     try {
-      const text = await ocrCanvas(url, (p) =>
-        setStatus(`Running OCR on image… ${p}%`)
-      );
-      return text;
+      const canvas = await loadImageToCanvas(url);
+      binarizeCanvas(canvas);
+      return await ocrCanvas(canvas, (p) => setStatus(`Running OCR on image… ${p}%`));
     } finally {
       URL.revokeObjectURL(url);
     }
+  }
+
+  // Decode an image into a canvas, upscaling small photos/screenshots —
+  // Tesseract does noticeably better with more source pixels per character.
+  function loadImageToCanvas(url) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const MIN_WIDTH = 1600;
+        const scale = img.width < MIN_WIDTH ? MIN_WIDTH / img.width : 1;
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas);
+      };
+      img.onerror = () => reject(new Error("Could not load image"));
+      img.src = url;
+    });
+  }
+
+  // Grayscale + Otsu binarization, in place. Printed report tables OCR far
+  // more reliably as clean black-on-white than as anti-aliased color/gray —
+  // this removes table-line and pale-background noise that trips up Tesseract.
+  function binarizeCanvas(canvas) {
+    const ctx = canvas.getContext("2d");
+    const { width, height } = canvas;
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+    const pixelCount = width * height;
+    const gray = new Uint8ClampedArray(pixelCount);
+    const histogram = new Array(256).fill(0);
+
+    for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+      const g = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+      gray[p] = g;
+      histogram[g]++;
+    }
+
+    const threshold = otsuThreshold(histogram, pixelCount);
+
+    for (let p = 0; p < pixelCount; p++) {
+      const v = gray[p] > threshold ? 255 : 0;
+      const i = p * 4;
+      data[i] = data[i + 1] = data[i + 2] = v;
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    return canvas;
+  }
+
+  function otsuThreshold(histogram, total) {
+    let sumAll = 0;
+    for (let t = 0; t < 256; t++) sumAll += t * histogram[t];
+
+    let sumBackground = 0;
+    let weightBackground = 0;
+    let bestVariance = -1;
+    let threshold = 127;
+
+    for (let t = 0; t < 256; t++) {
+      weightBackground += histogram[t];
+      if (weightBackground === 0) continue;
+      const weightForeground = total - weightBackground;
+      if (weightForeground === 0) break;
+
+      sumBackground += t * histogram[t];
+      const meanBackground = sumBackground / weightBackground;
+      const meanForeground = (sumAll - sumBackground) / weightForeground;
+      const variance =
+        weightBackground * weightForeground * (meanBackground - meanForeground) ** 2;
+
+      if (variance > bestVariance) {
+        bestVariance = variance;
+        threshold = t;
+      }
+    }
+    return threshold;
   }
 
   async function ocrCanvas(source, onProgress) {
@@ -268,6 +351,13 @@ Return valid JSON only.`;
       },
     });
     try {
+      // PSM 6 ("a single uniform block of text") reads a results table's rows
+      // left-to-right in order far more reliably than the fully-automatic
+      // default, which tends to fragment tabular layouts.
+      await worker.setParameters({
+        tessedit_pageseg_mode: "6",
+        preserve_interword_spaces: "1",
+      });
       const { data } = await worker.recognize(source);
       return data.text || "";
     } finally {
