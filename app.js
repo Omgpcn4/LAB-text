@@ -356,16 +356,20 @@
     // Normalize a couple of common OCR/unicode quirks.
     line = line.replace(/µ/g, "μ").replace(/–|—/g, "-");
 
-    // 1. Pull off a LOW/HIGH/asterisk flag (word boundary, from anywhere in
-    //    the line) — it can sit between the range and a previous-value column.
+    // Drop bare "*" footnote markers (e.g. this row is asterisked with "*
+    // Confirm with blood morphology..." printed elsewhere on the page) —
+    // they can sit between the current result and a previous-value column,
+    // which would otherwise break the "one clean value at the end" parse
+    // below and make it grab the previous value as if it were current.
+    line = line.replace(/\*/g, " ").replace(/\s+/g, " ").trim();
+
+    // 1. Pull off a LOW/HIGH flag (word boundary, from anywhere in the line)
+    //    — it can sit between the range and a previous-value column.
     let flag = "";
     const flagMatch = line.match(/\b(LOW|HIGH)\b/i);
     if (flagMatch) {
       flag = flagMatch[1].toUpperCase();
       line = (line.slice(0, flagMatch.index) + line.slice(flagMatch.index + flagMatch[0].length)).trim();
-    } else if (/\*\s*$/.test(line)) {
-      flag = "*";
-      line = line.replace(/\*\s*$/, "").trim();
     }
 
     // 2. Pull off a reference range like "6.54 - 12.20" or "<10" — search
